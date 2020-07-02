@@ -15,16 +15,15 @@ class Essentia < Formula
   depends_on "libtag"
   depends_on "chromaprint"
   depends_on "gaia" => :optional
-  depends_on "tensorflow" => :optional
 
-  option "without-python", "Build without Python 3.8 support"
+  option "without-python", "Build without python3 support"
 
-  depends_on "python@3.8" if build.with? "python"
+  depends_on "python" if build.with? "python"
   depends_on "numpy" if build.with? "python"
 
   resource "six" do
-    url "https://files.pythonhosted.org/packages/21/9f/b251f7f8a76dec1d6651be194dfba8fb8d7781d10ab3987190de8391d08e/six-1.14.0.tar.gz"
-    sha256 "236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a"
+    url "https://files.pythonhosted.org/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz"
+    sha256 "70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
   end
 
   def install
@@ -37,16 +36,13 @@ class Essentia < Formula
     ]
 
     if build.with? "gaia"
-      build_flags += ["--with-gaia"]
+      system "python3", "waf", "configure", "--with-gaia", *build_flags
     end
-
-    if build.with? "tensorflow"
-      build_flags += ["--with-tensorflow"]
+    if build.without? "gaia"
+      system "python3", "waf", "configure", *build_flags
     end
-
-    system Formula["python@3.8"].opt_bin/"python3", "waf", "configure", *build_flags
-    system Formula["python@3.8"].opt_bin/"python3", "waf"
-    system Formula["python@3.8"].opt_bin/"python3", "waf", "install"
+    system "python3", "waf"
+    system "python3", "waf", "install"
 
     python_flags = [
       "--mode=release",
@@ -58,18 +54,9 @@ class Essentia < Formula
     ENV['PKG_CONFIG_PATH'] = "#{prefix}/lib/pkgconfig:" + ENV['PKG_CONFIG_PATH']
 
     if build.with? "python"
-      system Formula["python@3.8"].opt_bin/"python3", "waf", "configure", *python_flags
-      system Formula["python@3.8"].opt_bin/"python3", "waf"
-      system Formula["python@3.8"].opt_bin/"python3", "waf", "install"
-
-      resource("six").stage do
-        system Formula["python@3.8"].opt_bin/"python3", *Language::Python.setup_install_args(libexec)
-      end
-
-      version = Language::Python.major_minor_version Formula["python@3.8"].opt_bin/"python3"
-      site_packages = "lib/python#{version}/site-packages"
-      pth_contents = "import site; site.addsitedir('#{libexec/site_packages}')\n"
-      (prefix/site_packages/"homebrew-essentia.pth").write pth_contents
+      system "python3", "waf", "configure", *python_flags
+      system "python3", "waf"
+      system "python3", "waf", "install"
     end
   end
 
@@ -85,7 +72,7 @@ class Essentia < Formula
     EOS
 
     if build.with? "python"
-      system Formula["python@3.8"].opt_bin/"python3", "-c", "#{py_test}"
+      system "python3", "-c", "#{py_test}"
     end
   end
 end
